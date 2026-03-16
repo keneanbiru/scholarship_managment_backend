@@ -1,0 +1,301 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+////////////////////////////////////////////////////
+//// ENUMS
+////////////////////////////////////////////////////
+
+enum Role {
+  STUDENT
+  MANAGER
+  OWNER
+  ADMIN
+}
+
+enum FundingType {
+  FULLY_FUNDED
+  PARTIALLY_FUNDED
+  SELF_FUNDED
+}
+
+enum EducationLevel {
+  ELEMENTARY
+  MIDDLE_SCHOOL
+  HIGH_SCHOOL
+  TVET
+  DIPLOMA
+  BACHELOR
+  MASTERS
+  PHD
+  PROFESSIONAL
+  OTHER
+}
+
+enum ScholarshipType {
+  ACADEMIC
+  MERIT
+  NEED_BASED
+  SPORTS
+  ARTS
+  STEM
+  EXCHANGE
+  RESEARCH
+  COMPETITION
+  COMMUNITY
+  OTHER
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  EXPIRED
+}
+
+enum ApplicationStatus {
+  DRAFT
+  BOOKMARKED
+  APPLIED
+  ACCEPTED
+  REJECTED
+}
+
+enum DocumentType {
+  CV
+  COVER_LETTER
+  PERSONAL_STATEMENT
+  OTHER
+}
+
+////////////////////////////////////////////////////
+//// USER & PROFILE
+////////////////////////////////////////////////////
+
+model User {
+  id               String           @id @default(uuid())
+  email            String           @unique
+  passwordHash     String
+  role             Role
+  isActive         Boolean          @default(true)
+  createdById      String?
+
+  createdBy        User?            @relation("UserCreatedUsers", fields: [createdById], references: [id])
+  createdUsers     User[]           @relation("UserCreatedUsers")
+  studentProfile   StudentProfile?
+  applications     Application[]
+  communityPosts   CommunityPost[]
+  comments         Comment[]
+  notifications    Notification[]
+  recommendations  Recommendation[]
+  bookmarks        Bookmark[]
+  scholarships     Scholarship[]    @relation("ScholarshipCreator")
+  verifiedScholarships Scholarship[] @relation("ScholarshipVerifier")
+
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+}
+
+model StudentProfile {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  fullName       String
+  university     String
+  fieldOfStudy   String
+  currentEducationLevel EducationLevel
+  targetEducationLevels EducationLevel[]
+  gpa            Float?
+  country        String
+  preferredLang  String
+
+  user           User     @relation(fields: [userId], references: [id])
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+////////////////////////////////////////////////////
+//// SCHOLARSHIP
+////////////////////////////////////////////////////
+
+model Scholarship {
+  id                 String                 @id @default(uuid())
+  createdById        String
+  verifiedById       String?
+  scholarshipType    ScholarshipType        @default(ACADEMIC)
+  fundingType        FundingType
+  verificationStatus VerificationStatus      @default(PENDING)
+  deadline           DateTime
+  targetEducationLevels EducationLevel[]
+  minAge             Int?
+  maxAge             Int?
+  country            String
+  isActive           Boolean                @default(true)
+
+  createdBy          User                   @relation("ScholarshipCreator", fields: [createdById], references: [id])
+  verifiedBy         User?                  @relation("ScholarshipVerifier", fields: [verifiedById], references: [id])
+  translations       ScholarshipTranslation[]
+  applications       Application[]
+  recommendations    Recommendation[]
+  bookmarks          Bookmark[]
+
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+
+  @@index([createdById])
+  @@index([verifiedById])
+  @@index([deadline, country, fundingType, scholarshipType])
+}
+
+model ScholarshipTranslation {
+  id              String       @id @default(uuid())
+  scholarshipId   String
+  language        String
+  title           String
+  description     String
+
+  scholarship     Scholarship @relation(fields: [scholarshipId], references: [id])
+
+  @@unique([scholarshipId, language])
+}
+
+////////////////////////////////////////////////////
+//// APPLICATION & DOCUMENTS
+////////////////////////////////////////////////////
+
+model Application {
+  id              String            @id @default(uuid())
+  userId          String
+  scholarshipId   String
+  status          ApplicationStatus
+  appliedAt       DateTime?
+
+  user            User              @relation(fields: [userId], references: [id])
+  scholarship     Scholarship       @relation(fields: [scholarshipId], references: [id])
+  documents       Document[]
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@unique([userId, scholarshipId])
+  @@index([userId, status])
+}
+
+model Document {
+  id             String        @id @default(uuid())
+  applicationId  String
+  fileName       String
+  fileUrl        String
+  type           DocumentType
+
+  application    Application   @relation(fields: [applicationId], references: [id])
+
+  uploadedAt     DateTime      @default(now())
+}
+
+////////////////////////////////////////////////////
+//// BOOKMARKS
+////////////////////////////////////////////////////
+
+model Bookmark {
+  id            String       @id @default(uuid())
+  userId        String
+  scholarshipId String
+
+  user          User         @relation(fields: [userId], references: [id])
+  scholarship   Scholarship  @relation(fields: [scholarshipId], references: [id])
+
+  createdAt     DateTime     @default(now())
+
+  @@unique([userId, scholarshipId])
+  @@index([userId])
+}
+
+////////////////////////////////////////////////////
+//// COMMUNITY DISCUSSION
+////////////////////////////////////////////////////
+
+model CommunityPost {
+  id        String     @id @default(uuid())
+  userId    String
+  title     String
+  content   String
+  isActive  Boolean    @default(true)
+
+  user      User       @relation(fields: [userId], references: [id])
+  comments  Comment[]
+
+  createdAt DateTime   @default(now())
+}
+
+model Comment {
+  id        String        @id @default(uuid())
+  content   String
+  userId    String
+  postId    String
+  parentId  String?
+  isActive  Boolean       @default(true)
+
+  user      User          @relation(fields: [userId], references: [id])
+  post      CommunityPost @relation(fields: [postId], references: [id])
+  parent    Comment?      @relation("CommentThread", fields: [parentId], references: [id])
+  replies   Comment[]     @relation("CommentThread")
+
+  createdAt DateTime      @default(now())
+}
+
+////////////////////////////////////////////////////
+//// AI RECOMMENDATION (ANALYTICS)
+////////////////////////////////////////////////////
+
+model Recommendation {
+  id              String       @id @default(uuid())
+  userId          String
+  scholarshipId   String
+  score           Float
+
+  user            User         @relation(fields: [userId], references: [id])
+  scholarship     Scholarship  @relation(fields: [scholarshipId], references: [id])
+
+  createdAt       DateTime     @default(now())
+
+  @@index([userId])
+}
+
+////////////////////////////////////////////////////
+//// NOTIFICATIONS
+////////////////////////////////////////////////////
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+
+  user      User     @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRead])
+}
+
+////////////////////////////////////////////////////
+//// DOCUMENT TEMPLATES (UC07)
+////////////////////////////////////////////////////
+
+model DocumentTemplate {
+  id        String        @id @default(uuid())
+  name      String
+  type      DocumentType
+  fileUrl   String
+  language  String?
+
+  createdAt DateTime      @default(now())
+}
+
+
