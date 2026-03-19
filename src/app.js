@@ -6,6 +6,8 @@ import { env } from './config/env.js';
 
 // Import routes
 import authRoutes from './routes/auth.routes.js';
+import usersRoutes from './routes/users.routes.js';
+import profileRoutes from './routes/profile.routes.js';
 
 // Create Express app
 const app = express();
@@ -41,6 +43,8 @@ app.get('/health', (req, res) => {
 
 // API routes
 app.use('/api/auth', authRoutes);
+app.use('/api/users', usersRoutes);
+app.use('/api/profile', profileRoutes);
 
 // 404 handler
 app.use((req, res) => {

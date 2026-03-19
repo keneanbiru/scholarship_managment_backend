@@ -114,5 +114,88 @@ export class UserRepositoryImpl extends UserRepository {
     });
     return !!user;
   }
+
+  async listUsers({ page = 1, limit = 20, search = '', role = null, createdById = null } = {}) {
+    const prisma = await getPrismaClient();
+    const skip = (Math.max(page, 1) - 1) * Math.max(limit, 1);
+    const take = Math.max(limit, 1);
+    const where = {
+      ...(search && {
+        email: { contains: search, mode: 'insensitive' }
+      }),
+      ...(role && { role }),
+      ...(createdById && { createdById })
+    };
+
+    const [items, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' }
+      }),
+      prisma.user.count({ where })
+    ]);
+
+    return {
+      users: items.map((item) => new User({
+        id: item.id,
+        email: item.email,
+        passwordHash: item.passwordHash,
+        role: item.role,
+        isActive: item.isActive,
+        createdById: item.createdById,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt
+      })),
+      pagination: {
+        page: Math.max(page, 1),
+        limit: Math.max(limit, 1),
+        total,
+        totalPages: Math.max(Math.ceil(total / Math.max(limit, 1)), 1)
+      }
+    };
+  }
+
+  async findProfileByUserId(userId) {
+    const prisma = await getPrismaClient();
+    return prisma.studentProfile.findUnique({
+      where: { userId }
+    });
+  }
+
+  async createProfile(profileData) {
+    const prisma = await getPrismaClient();
+    return prisma.studentProfile.create({
+      data: {
+        userId: profileData.userId,
+        fullName: profileData.fullName,
+        university: profileData.university,
+        fieldOfStudy: profileData.fieldOfStudy,
+        currentEducationLevel: profileData.currentEducationLevel,
+        targetEducationLevels: profileData.targetEducationLevels,
+        gpa: profileData.gpa,
+        country: profileData.country,
+        preferredLang: profileData.preferredLang
+      }
+    });
+  }
+
+  async updateProfile(userId, updates) {
+    const prisma = await getPrismaClient();
+    return prisma.studentProfile.update({
+      where: { userId },
+      data: {
+        ...(updates.fullName !== undefined && { fullName: updates.fullName }),
+        ...(updates.university !== undefined && { university: updates.university }),
+        ...(updates.fieldOfStudy !== undefined && { fieldOfStudy: updates.fieldOfStudy }),
+        ...(updates.currentEducationLevel !== undefined && { currentEducationLevel: updates.currentEducationLevel }),
+        ...(updates.targetEducationLevels !== undefined && { targetEducationLevels: updates.targetEducationLevels }),
+        ...(updates.gpa !== undefined && { gpa: updates.gpa }),
+        ...(updates.country !== undefined && { country: updates.country }),
+        ...(updates.preferredLang !== undefined && { preferredLang: updates.preferredLang })
+      }
+    });
+  }
 }
 

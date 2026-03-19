@@ -138,7 +138,7 @@ GET    /api/auth/me (protected)
 - Login with valid credentials → Token returned
 - Login with invalid credentials → Error (401)
 - Access protected route without token → Error (401)
-- Access admin route as student → Error (403)
+- Access admin/owner route as student → Error (403)
 - Password reset flow end-to-end
 
 **Manual Testing:**
@@ -163,15 +163,18 @@ Manage platform users and student profiles
 6. Create user listing with pagination
 7. Add user search functionality
 8. Implement profile completeness calculation
+9. Implement role-creation hierarchy (admin → owner, owner → manager)
 
 #### API Endpoints
 ```
-GET    /api/users (admin only)
-GET    /api/users/:id (admin/self)
+GET    /api/users (admin/owner-scoped)
+GET    /api/users/:id (admin/owner-scoped/self)
 PUT    /api/users/:id (admin/self)
 DELETE /api/users/:id (admin only)
-PUT    /api/users/:id/activate (admin only)
-PUT    /api/users/:id/role (admin only)
+PUT    /api/users/:id/activate (admin/owner-scoped)
+PUT    /api/users/:id/role (admin full, owner-scoped)
+POST   /api/users/owners (admin only)
+POST   /api/users/managers (admin/owner)
 
 POST   /api/profile (student)
 GET    /api/profile (student - self)
@@ -190,7 +193,7 @@ PUT    /api/profile (student - self)
 #### Deliverables
 - [ ] User management module complete
 - [ ] Student profile system working
-- [ ] Admin controls functional
+- [ ] Admin and owner controls functional
 - [ ] Profile validation implemented
 - [ ] API documentation updated
 
@@ -204,9 +207,11 @@ PUT    /api/profile (student - self)
 - Create student profile → Success
 - Update profile with valid data → Success
 - Update profile with invalid GPA → Error (400)
-- Admin promotes user to manager → Success
+- Admin creates owner account → Success
+- Owner creates manager account → Success
 - Student tries to promote user → Error (403)
 - Get all users as admin → Success with pagination
+- Get scoped users as owner → Success
 - Get all users as student → Error (403)
 
 **Data Validation:**
@@ -217,11 +222,11 @@ PUT    /api/profile (student - self)
 
 ---
 
-### Milestone 3: Admin Management Foundation
+### Milestone 3: Platform Governance Foundation (Admin + Owner)
 **Duration:** 3 days
 
 #### Purpose
-Basic admin dashboard and system oversight
+System oversight for admin and operational oversight for owner
 
 #### Tasks
 1. Create admin dashboard endpoint
@@ -229,6 +234,7 @@ Basic admin dashboard and system oversight
 3. Add user management interface endpoints
 4. Create audit log system
 5. Implement admin activity tracking
+6. Create owner dashboard endpoint and owner-scope metrics
 
 #### API Endpoints
 ```
@@ -236,16 +242,20 @@ GET    /api/admin/dashboard
 GET    /api/admin/statistics
 GET    /api/admin/users
 GET    /api/admin/audit-logs
+GET    /api/owner/dashboard
+GET    /api/owner/statistics
 ```
 
 #### Deliverables
 - [ ] Admin dashboard API ready
+- [ ] Owner dashboard API ready
 - [ ] Basic statistics endpoint working
 - [ ] Audit logging implemented
 
 #### Testing
 **Integration Tests:**
 - Admin accesses dashboard → Success
+- Owner accesses owner dashboard → Success
 - Student accesses dashboard → Error (403)
 - Statistics show correct counts
 
@@ -257,7 +267,7 @@ GET    /api/admin/audit-logs
 **Duration:** 1 week
 
 #### Purpose
-Allow managers to create and maintain scholarship listings
+Allow owners and managers to create and maintain scholarship listings
 
 #### Tasks
 1. Create scholarship model and repository
@@ -286,7 +296,7 @@ Allow managers to create and maintain scholarship listings
   description: Text (required),
   eligibility_criteria: Text,
   status: Enum, // draft, pending, verified, expired, rejected
-  created_by: UUID (manager_id),
+  created_by: UUID (manager_id | owner_id),
   verified_by: UUID (admin_id),
   created_at: Timestamp,
   updated_at: Timestamp
@@ -295,13 +305,13 @@ Allow managers to create and maintain scholarship listings
 
 #### API Endpoints
 ```
-POST   /api/scholarships (manager/admin)
+POST   /api/scholarships (manager/owner/admin)
 GET    /api/scholarships
 GET    /api/scholarships/:id
-PUT    /api/scholarships/:id (manager-own/admin)
-DELETE /api/scholarships/:id (manager-own/admin)
-GET    /api/scholarships/my-scholarships (manager)
-POST   /api/scholarships/:id/documents (manager/admin)
+PUT    /api/scholarships/:id (manager-own/owner-scope/admin)
+DELETE /api/scholarships/:id (manager-own/owner-scope/admin)
+GET    /api/scholarships/my-scholarships (manager/owner)
+POST   /api/scholarships/:id/documents (manager/owner/admin)
 ```
 
 #### Deliverables
@@ -320,9 +330,11 @@ POST   /api/scholarships/:id/documents (manager/admin)
 
 **Integration Tests:**
 - Manager creates scholarship → Success (201)
+- Owner creates scholarship → Success (201)
 - Manager creates scholarship with past deadline → Error (400)
 - Manager updates own scholarship → Success
 - Manager updates another manager's scholarship → Error (403)
+- Owner updates scholarship in owner scope → Success
 - Admin updates any scholarship → Success
 - Student creates scholarship → Error (403)
 - Get scholarship by ID → Returns full details
@@ -533,13 +545,13 @@ Students track scholarship applications
 ```
 POST   /api/applications (student)
 GET    /api/applications (student - own applications)
-GET    /api/applications/:id (student-own/manager/admin)
+GET    /api/applications/:id (student-own/manager-own/owner-scope/admin)
 PUT    /api/applications/:id (student-own)
 PUT    /api/applications/:id/status (student-own)
 DELETE /api/applications/:id (student-own)
 POST   /api/applications/:id/notes (student-own)
 
-GET    /api/scholarships/:id/applications/count (manager-own/admin)
+GET    /api/scholarships/:id/applications/count (manager-own/owner-scope/admin)
 ```
 
 #### Deliverables
@@ -558,6 +570,7 @@ GET    /api/scholarships/:id/applications/count (manager-own/admin)
 - Student views another's application → Error (403)
 - Manager views application count for own scholarship → Success
 - Manager views application count for other's scholarship → Error (403)
+- Owner views application count for owned-manager scholarship → Success
 - Admin views all application data → Success
 
 **Business Logic Tests:**
@@ -583,7 +596,7 @@ Provide application preparation resources
 
 #### Tasks
 1. Create document model
-2. Implement file upload (admin)
+2. Implement file upload (admin/owner)
 3. Add document categorization
 4. Create document listing
 5. Implement download endpoint
@@ -599,12 +612,12 @@ Provide application preparation resources
 
 #### API Endpoints
 ```
-POST   /api/documents (admin)
+POST   /api/documents (admin/owner)
 GET    /api/documents
 GET    /api/documents/:id
 GET    /api/documents/:id/download
-PUT    /api/documents/:id (admin)
-DELETE /api/documents/:id (admin)
+PUT    /api/documents/:id (admin/owner)
+DELETE /api/documents/:id (admin/owner)
 ```
 
 #### Deliverables
@@ -616,6 +629,7 @@ DELETE /api/documents/:id (admin)
 #### Testing
 **Integration Tests:**
 - Admin uploads document → Success
+- Owner uploads document → Success
 - Student downloads document → Success, count incremented
 - Student uploads document → Error (403)
 - Download non-existent document → Error (404)
@@ -700,11 +714,11 @@ PUT    /api/notifications/preferences (user)
 
 ---
 
-### Milestone 11: Manager Dashboard
+### Milestone 11: Manager & Owner Dashboards
 **Duration:** 4 days
 
 #### Purpose
-Help managers track their scholarships
+Help managers track owned scholarships and owners track manager portfolios
 
 #### Tasks
 1. Create manager dashboard endpoint
@@ -713,6 +727,7 @@ Help managers track their scholarships
 4. Create deadline monitoring
 5. Add performance metrics
 6. Implement quick actions
+7. Create owner dashboard and manager portfolio metrics
 
 #### Dashboard Metrics
 - Total scholarships posted
@@ -729,10 +744,14 @@ GET    /api/manager/dashboard
 GET    /api/manager/scholarships
 GET    /api/manager/scholarships/:id/analytics
 GET    /api/manager/statistics
+GET    /api/owner/dashboard
+GET    /api/owner/managers
+GET    /api/owner/statistics
 ```
 
 #### Deliverables
 - [ ] Manager dashboard API complete
+- [ ] Owner dashboard API complete
 - [ ] Statistics accurate
 - [ ] Analytics working
 - [ ] Quick actions functional
@@ -861,10 +880,11 @@ Provide insights about platform usage
 #### Tasks
 1. Create analytics data collection
 2. Implement admin analytics dashboard
-3. Add student dashboard
-4. Create visualization data endpoints
-5. Implement trend analysis
-6. Add export functionality
+3. Implement owner analytics dashboard (scoped)
+4. Add student dashboard
+5. Create visualization data endpoints
+6. Implement trend analysis
+7. Add export functionality
 
 #### Admin Analytics
 - Total users (by role)
@@ -895,6 +915,7 @@ GET    /api/admin/analytics/scholarships
 GET    /api/admin/analytics/applications
 GET    /api/admin/analytics/trends
 GET    /api/admin/analytics/export
+GET    /api/owner/analytics/overview
 
 GET    /api/student/dashboard
 GET    /api/student/statistics
@@ -902,6 +923,7 @@ GET    /api/student/statistics
 
 #### Deliverables
 - [ ] Admin analytics complete
+- [ ] Owner analytics complete (scoped)
 - [ ] Student dashboard ready
 - [ ] Data visualization endpoints working
 - [ ] Export functionality implemented
@@ -910,6 +932,7 @@ GET    /api/student/statistics
 #### Testing
 **Integration Tests:**
 - Admin accesses analytics → Success
+- Owner accesses owner analytics → Success
 - Student accesses admin analytics → Error (403)
 - All metrics show correct data
 - Trends calculated correctly
@@ -1015,9 +1038,9 @@ GET    /api/student/statistics
 | Phase | Duration | Milestones |
 |-------|----------|------------|
 | Pre-Development | 1 week | M0: Project Setup |
-| Phase 1: Foundation | 3 weeks | M1-M3: Auth, Users, Admin |
+| Phase 1: Foundation | 3 weeks | M1-M3: Auth, Users, Governance |
 | Phase 2: Core Features | 4 weeks | M4-M8: Scholarships, Search, Bookmarks, Applications |
-| Phase 3: Enhanced | 3 weeks | M9-M11: Documents, Notifications, Manager Dashboard |
+| Phase 3: Enhanced | 3 weeks | M9-M11: Documents, Notifications, Manager/Owner Dashboards |
 | Phase 4: Intelligence | 2 weeks | M12-M13: AI Recommendations, Analytics |
 | Testing & Deployment | 1.5 weeks | M14-M15: QA, Launch |
 

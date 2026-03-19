@@ -8,7 +8,7 @@ export class RegisterUser {
     this.userRepository = userRepository || new UserRepositoryImpl();
   }
 
-  async execute({ email, password, role = 'STUDENT', allowPrivilegedRoleCreation = false }) {
+  async execute({ email, password, role = 'STUDENT', allowPrivilegedRoleCreation = false, createdById = null }) {
     // Validate input
     if (!email || !password) {
       throw new Error('Email and password are required');
@@ -42,7 +42,8 @@ export class RegisterUser {
       email,
       passwordHash,
       role: userRole.toString(),
-      isActive: true
+      isActive: true,
+      ...(createdById && { createdById })
     });
 
     // Return user without password hash
