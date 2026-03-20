@@ -72,6 +72,15 @@ enum DocumentType {
   OTHER
 }
 
+enum AuditAction {
+  OWNER_CREATED
+  MANAGER_CREATED
+  USER_ACTIVE_STATUS_CHANGED
+  USER_ROLE_CHANGED
+  USER_UPDATED_BY_ADMIN
+  USER_DEACTIVATED
+}
+
 ////////////////////////////////////////////////////
 //// USER & PROFILE
 ////////////////////////////////////////////////////
@@ -95,6 +104,7 @@ model User {
   bookmarks        Bookmark[]
   scholarships     Scholarship[]    @relation("ScholarshipCreator")
   verifiedScholarships Scholarship[] @relation("ScholarshipVerifier")
+  auditLogs        AuditLog[]       @relation("UserAuditLogs")
 
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
@@ -296,6 +306,27 @@ model DocumentTemplate {
   language  String?
 
   createdAt DateTime      @default(now())
+}
+
+//// AUDIT (Milestone 3 — governance)
+
+model AuditLog {
+  id          String      @id @default(uuid())
+  actorUserId String
+  action      AuditAction
+  entityType  String      @default("USER")
+  entityId    String?
+  details     Json?
+  ip          String?
+  userAgent   String?
+
+  actor       User        @relation("UserAuditLogs", fields: [actorUserId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime    @default(now())
+
+  @@index([actorUserId])
+  @@index([createdAt])
+  @@index([entityType, entityId])
 }
 
 

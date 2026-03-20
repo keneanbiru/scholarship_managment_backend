@@ -8,6 +8,8 @@ import { env } from './config/env.js';
 import authRoutes from './routes/auth.routes.js';
 import usersRoutes from './routes/users.routes.js';
 import profileRoutes from './routes/profile.routes.js';
+import adminRoutes from './routes/admin.routes.js';
+import ownerRoutes from './routes/owner.routes.js';
 
 // Create Express app
 const app = express();
@@ -45,6 +47,8 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/owner', ownerRoutes);
 
 // 404 handler
 app.use((req, res) => {
