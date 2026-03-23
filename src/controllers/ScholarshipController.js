@@ -6,6 +6,7 @@ import { GetScholarshipById } from '../usecases/scholarships/GetScholarshipById.
 import { ListScholarships } from '../usecases/scholarships/ListScholarships.js';
 import { ListMyScholarships } from '../usecases/scholarships/ListMyScholarships.js';
 import { AddScholarshipDocument } from '../usecases/scholarships/AddScholarshipDocument.js';
+import { SubmitScholarshipForReview } from '../usecases/scholarships/SubmitScholarshipForReview.js';
 
 export class ScholarshipController {
   static async create(req, res) {
@@ -97,6 +98,20 @@ export class ScholarshipController {
         file: req.file
       });
       return res.status(HTTP_STATUS.CREATED).json({ success: true, data: { document } });
+    } catch (error) {
+      const status = error.message === 'Scholarship not found' ? HTTP_STATUS.NOT_FOUND : HTTP_STATUS.BAD_REQUEST;
+      return res.status(status).json({ success: false, message: error.message });
+    }
+  }
+
+  static async submitForReview(req, res) {
+    try {
+      const usecase = new SubmitScholarshipForReview();
+      const scholarship = await usecase.execute({
+        actor: req.user,
+        scholarshipId: req.params.id
+      });
+      return res.status(HTTP_STATUS.OK).json({ success: true, data: { scholarship } });
     } catch (error) {
       const status = error.message === 'Scholarship not found' ? HTTP_STATUS.NOT_FOUND : HTTP_STATUS.BAD_REQUEST;
       return res.status(status).json({ success: false, message: error.message });

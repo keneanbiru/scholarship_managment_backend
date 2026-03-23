@@ -108,4 +108,42 @@ export class ScholarshipRepositoryImpl {
     const total = await prisma.application.count({ where: { scholarshipId } });
     return total > 0;
   }
+
+  async listPending({ page = 1, limit = 20 } = {}) {
+    return this.list({ page, limit, status: 'PENDING' });
+  }
+
+  async updateVerificationStatus({ scholarshipId, status, verifiedById }) {
+    return this.update(scholarshipId, {
+      status,
+      verifiedById
+    });
+  }
+
+  async findExpirableScholarships(now = new Date()) {
+    const prisma = await getPrismaClient();
+    return prisma.scholarship.findMany({
+      where: {
+        isActive: true,
+        deadline: { lt: now },
+        status: {
+          in: ['DRAFT', 'PENDING', 'VERIFIED']
+        }
+      },
+      include: {
+        createdBy: { select: { id: true, email: true, role: true } }
+      }
+    });
+  }
+
+  async markExpiredByIds(ids) {
+    if (!ids?.length) {
+      return { count: 0 };
+    }
+    const prisma = await getPrismaClient();
+    return prisma.scholarship.updateMany({
+      where: { id: { in: ids } },
+      data: { status: 'EXPIRED' }
+    });
+  }
 }

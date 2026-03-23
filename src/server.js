@@ -1,6 +1,7 @@
 import app from './app.js';
 import { env } from './config/env.js';
 import { getPrismaClient, disconnectPrisma } from './infrastructure/database/prismaClient.js';
+import { startScholarshipExpiryJob, stopScholarshipExpiryJob } from './jobs/scholarshipExpiryJob.js';
 
 // Initialize database connection
 const initializeDatabase = async () => {
@@ -28,6 +29,7 @@ const startServer = async () => {
       console.log(`🔗 Health check: http://localhost:${env.PORT}/health`);
       console.log(`🔐 Auth endpoints: http://localhost:${env.PORT}/api/auth`);
     });
+    startScholarshipExpiryJob();
 
     // Graceful shutdown
     const gracefulShutdown = async (signal) => {
@@ -38,6 +40,7 @@ const startServer = async () => {
         
         await disconnectPrisma();
         console.log('Database connection closed');
+        stopScholarshipExpiryJob();
         
         process.exit(0);
       });

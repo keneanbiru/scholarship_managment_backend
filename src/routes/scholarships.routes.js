@@ -12,6 +12,7 @@ router.get('/my-scholarships', authMiddleware, roleMiddleware([ROLES.OWNER, ROLE
 router.post('/', authMiddleware, roleMiddleware([ROLES.ADMIN, ROLES.OWNER, ROLES.MANAGER]), ScholarshipController.create);
 router.put('/:id', authMiddleware, roleMiddleware([ROLES.ADMIN, ROLES.OWNER, ROLES.MANAGER]), ScholarshipController.update);
 router.delete('/:id', authMiddleware, roleMiddleware([ROLES.ADMIN, ROLES.OWNER, ROLES.MANAGER]), ScholarshipController.remove);
+router.put('/:id/submit', authMiddleware, roleMiddleware([ROLES.ADMIN, ROLES.OWNER, ROLES.MANAGER]), ScholarshipController.submitForReview);
 router.post(
   '/:id/documents',
   authMiddleware,

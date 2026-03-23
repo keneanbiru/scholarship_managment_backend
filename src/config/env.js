@@ -24,6 +24,9 @@ export const env = {
   LINKEDIN_CLIENT_ID: process.env.LINKEDIN_CLIENT_ID || '',
   LINKEDIN_CLIENT_SECRET: process.env.LINKEDIN_CLIENT_SECRET || '',
   LINKEDIN_CALLBACK_URL: process.env.LINKEDIN_CALLBACK_URL || '',
+
+  // Jobs
+  SCHOLARSHIP_EXPIRY_JOB_INTERVAL_MS: parseInt(process.env.SCHOLARSHIP_EXPIRY_JOB_INTERVAL_MS || '86400000', 10),
   
   // Email (for notifications)
   EMAIL_HOST: process.env.EMAIL_HOST || '',
