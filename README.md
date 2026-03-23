@@ -80,6 +80,16 @@ npm start
 - `GET /api/auth/me` - Get current user profile (protected)
 - `GET /api/auth/profile` - Backward-compatible profile endpoint (protected)
 
+### Scholarships (Milestone 4)
+
+- `POST /api/scholarships` - Create scholarship (`ADMIN`, `OWNER`, `MANAGER`)
+- `GET /api/scholarships` - List scholarships with pagination/filters (`page`, `limit`, `search`, `status`, `country`)
+- `GET /api/scholarships/:id` - Get scholarship details
+- `PUT /api/scholarships/:id` - Update scholarship (`ADMIN`, owner-scope, manager-own)
+- `DELETE /api/scholarships/:id` - Soft delete/archive scholarship (`ADMIN`, owner-scope, manager-own)
+- `GET /api/scholarships/my-scholarships` - List own/scoped scholarships (`OWNER`, `MANAGER`)
+- `POST /api/scholarships/:id/documents` - Upload scholarship document (`multipart/form-data`, field name: `file`)
+
 ### Example Request (Register)
 
 ```json

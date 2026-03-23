@@ -10,6 +10,7 @@ import usersRoutes from './routes/users.routes.js';
 import profileRoutes from './routes/profile.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import ownerRoutes from './routes/owner.routes.js';
+import scholarshipsRoutes from './routes/scholarships.routes.js';
 
 // Create Express app
 const app = express();
@@ -33,6 +34,7 @@ if (env.NODE_ENV !== 'test') {
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use('/uploads', express.static('uploads'));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -49,6 +51,7 @@ app.use('/api/users', usersRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/owner', ownerRoutes);
+app.use('/api/scholarships', scholarshipsRoutes);
 
 // 404 handler
 app.use((req, res) => {
