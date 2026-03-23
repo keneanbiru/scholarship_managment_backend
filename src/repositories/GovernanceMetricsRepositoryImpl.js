@@ -17,7 +17,7 @@ export class GovernanceMetricsRepositoryImpl {
       prisma.user.groupBy({ by: ['role'], _count: { id: true } }),
       prisma.user.count({ where: { isActive: true } }),
       prisma.user.count({ where: { isActive: false } }),
-      prisma.scholarship.groupBy({ by: ['verificationStatus'], _count: { id: true } }),
+      prisma.scholarship.groupBy({ by: ['status'], _count: { id: true } }),
       prisma.studentProfile.count(),
       prisma.application.count(),
       prisma.bookmark.count()
@@ -28,10 +28,10 @@ export class GovernanceMetricsRepositoryImpl {
       byRole[g.role] = g._count.id;
     }
 
-    const byVerificationStatus = {};
+    const byStatus = {};
     let scholarshipsTotal = 0;
     for (const g of scholarshipGrouped) {
-      byVerificationStatus[g.verificationStatus] = g._count.id;
+      byStatus[g.status] = g._count.id;
       scholarshipsTotal += g._count.id;
     }
 
@@ -44,7 +44,7 @@ export class GovernanceMetricsRepositoryImpl {
       },
       scholarships: {
         total: scholarshipsTotal,
-        byVerificationStatus
+        byStatus
       },
       studentProfiles,
       applications,

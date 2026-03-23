@@ -51,10 +51,12 @@ enum ScholarshipType {
   OTHER
 }
 
-enum VerificationStatus {
+enum ScholarshipStatus {
+  DRAFT
   PENDING
   VERIFIED
   EXPIRED
+  REJECTED
 }
 
 enum ApplicationStatus {
@@ -104,6 +106,7 @@ model User {
   bookmarks        Bookmark[]
   scholarships     Scholarship[]    @relation("ScholarshipCreator")
   verifiedScholarships Scholarship[] @relation("ScholarshipVerifier")
+  scholarshipDocuments ScholarshipDocument[]
   auditLogs        AuditLog[]       @relation("UserAuditLogs")
 
   createdAt        DateTime         @default(now())
@@ -136,9 +139,15 @@ model Scholarship {
   id                 String                 @id @default(uuid())
   createdById        String
   verifiedById       String?
+  title              String
+  provider           String
+  fieldOfStudy       String
+  officialLink       String
+  description        String
+  eligibilityCriteria String?
   scholarshipType    ScholarshipType        @default(ACADEMIC)
   fundingType        FundingType
-  verificationStatus VerificationStatus      @default(PENDING)
+  status             ScholarshipStatus      @default(DRAFT)
   deadline           DateTime
   targetEducationLevels EducationLevel[]
   minAge             Int?
@@ -152,6 +161,7 @@ model Scholarship {
   applications       Application[]
   recommendations    Recommendation[]
   bookmarks          Bookmark[]
+  documents          ScholarshipDocument[]
 
   createdAt          DateTime               @default(now())
   updatedAt          DateTime               @updatedAt
@@ -159,6 +169,7 @@ model Scholarship {
   @@index([createdById])
   @@index([verifiedById])
   @@index([deadline, country, fundingType, scholarshipType])
+  @@index([status])
 }
 
 model ScholarshipTranslation {
@@ -306,6 +317,22 @@ model DocumentTemplate {
   language  String?
 
   createdAt DateTime      @default(now())
+}
+
+model ScholarshipDocument {
+  id            String      @id @default(uuid())
+  scholarshipId String
+  fileName      String
+  fileUrl       String
+  mimeType      String?
+  uploadedById  String
+
+  scholarship   Scholarship @relation(fields: [scholarshipId], references: [id], onDelete: Cascade)
+  uploadedBy    User        @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime    @default(now())
+
+  @@index([scholarshipId])
 }
 
 //// AUDIT (Milestone 3 — governance)
