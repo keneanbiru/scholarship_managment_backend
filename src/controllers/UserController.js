@@ -7,6 +7,13 @@ import { SetUserActiveStatus } from '../usecases/users/SetUserActiveStatus.js';
 import { ChangeUserRole } from '../usecases/users/ChangeUserRole.js';
 import { CreatePrivilegedUser } from '../usecases/users/CreatePrivilegedUser.js';
 
+function buildAuditContext(req) {
+  return {
+    ip: req.ip,
+    userAgent: req.get('user-agent')
+  };
+}
+
 export class UserController {
   static async listUsers(req, res) {
     try {
@@ -41,7 +48,8 @@ export class UserController {
       const user = await usecase.execute({
         actor: req.user,
         userId: req.params.id,
-        updates: req.body || {}
+        updates: req.body || {},
+        auditContext: buildAuditContext(req)
       });
       return res.status(HTTP_STATUS.OK).json({ success: true, data: { user } });
     } catch (error) {
@@ -53,7 +61,11 @@ export class UserController {
   static async deactivateUser(req, res) {
     try {
       const usecase = new DeactivateUser();
-      const result = await usecase.execute({ actor: req.user, userId: req.params.id });
+      const result = await usecase.execute({
+        actor: req.user,
+        userId: req.params.id,
+        auditContext: buildAuditContext(req)
+      });
       return res.status(HTTP_STATUS.OK).json({ success: true, message: result.message });
     } catch (error) {
       const status = error.message === 'User not found' ? HTTP_STATUS.NOT_FOUND : HTTP_STATUS.FORBIDDEN;
@@ -73,7 +85,8 @@ export class UserController {
       const user = await usecase.execute({
         actor: req.user,
         userId: req.params.id,
-        isActive: req.body.isActive
+        isActive: req.body.isActive,
+        auditContext: buildAuditContext(req)
       });
       return res.status(HTTP_STATUS.OK).json({ success: true, data: { user } });
     } catch (error) {
@@ -88,7 +101,8 @@ export class UserController {
       const user = await usecase.execute({
         actor: req.user,
         userId: req.params.id,
-        role: req.body?.role
+        role: req.body?.role,
+        auditContext: buildAuditContext(req)
       });
       return res.status(HTTP_STATUS.OK).json({ success: true, data: { user } });
     } catch (error) {
@@ -103,7 +117,8 @@ export class UserController {
       const result = await usecase.createOwner({
         actor: req.user,
         email: req.body?.email,
-        password: req.body?.password
+        password: req.body?.password,
+        auditContext: buildAuditContext(req)
       });
       return res.status(HTTP_STATUS.CREATED).json({ success: true, data: result, message: 'Owner created successfully' });
     } catch (error) {
@@ -117,7 +132,8 @@ export class UserController {
       const result = await usecase.createManager({
         actor: req.user,
         email: req.body?.email,
-        password: req.body?.password
+        password: req.body?.password,
+        auditContext: buildAuditContext(req)
       });
       return res.status(HTTP_STATUS.CREATED).json({ success: true, data: result, message: 'Manager created successfully' });
     } catch (error) {
